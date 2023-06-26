@@ -207,6 +207,21 @@ function orderCards(hand) {
   return orderedHand;
 }
 
+function createRangeSummary() {
+  for (let i = 0; i < handClasses.length; i++) {
+    const handClass = handClasses[i];
+    simplifiedRangeSummary[handClass] = {
+      raise: 0,
+      call: 0,
+      fold: 0,
+    };
+  }
+}
+
+createRangeSummary();
+
+console.log(simplifiedRangeSummary);
+
 function simplifyRange() {
   // Create a deep copy of the original inputRangeFull
   const newRanges = JSON.parse(JSON.stringify(inputRangeFull.value));
@@ -460,36 +475,48 @@ onMounted(() => {
         non tempore, natus maiores eum id ullam incidunt mollitia deleniti
         repudiandae esse est fugiat ab, nemo aliquid sit dolorum. Atque?
       </p>
-      <div class="mt-5">
-        <div>
-          <label
-            for="raising_range"
-            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-            >Raising Range ({{ averageRaise }}%)</label
-          >
-          <input
-            type="text"
-            id="raising_range"
-            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-            placeholder="Paste raising range here..."
-            required
-            v-model="raisingRangeRaw"
-          />
+      <div
+        class="mb-4 mt-5 rounded-lg bg-yellow-100 px-6 py-5 text-base text-yellow-800 border border-yellow-300"
+      >
+        A simple warning alert with
+        <a href="#!" class="font-bold text-warning-800">an example link</a>.
+        Give it a click if you like.
+      </div>
+
+      <div class="flex flex-row space-x-6">
+        <div class="basis-1/2">
+          <div>
+            <label
+              for="raising_range"
+              class="block mb-2 text-base font-medium text-gray-900 dark:text-white"
+              >Raising Range ({{ averageRaise }}%)</label
+            >
+            <input
+              type="text"
+              id="raising_range"
+              class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+              placeholder="Paste raising range here..."
+              required
+              v-model="raisingRangeRaw"
+            />
+          </div>
         </div>
-        <div>
-          <label
-            for="calling_range"
-            class="block mb-2 mt-4 text-sm font-medium text-gray-900 dark:text-white"
-            >Calling Range ({{ averageCall }}%)</label
-          >
-          <input
-            type="text"
-            id="calling_range"
-            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-            placeholder="Paste calling range here..."
-            required
-            v-model="callingRangeRaw"
-          />
+        <div class="basis-1/2">
+          <div>
+            <label
+              for="calling_range"
+              class="block mb-2 text-base font-medium text-gray-900 dark:text-white"
+              >Calling Range ({{ averageCall }}%)</label
+            >
+            <input
+              type="text"
+              id="calling_range"
+              class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+              placeholder="Paste calling range here..."
+              required
+              v-model="callingRangeRaw"
+            />
+          </div>
         </div>
       </div>
       <button
