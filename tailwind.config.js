@@ -8,6 +8,10 @@ module.exports = {
       fontFamily: {
         sans: ["Roboto", ...defaultTheme.fontFamily.sans],
       },
+      gridTemplateColumns: {
+        // Simple 16 column grid
+        13: "repeat(13, 40px)",
+      },
     },
   },
   plugins: [],
