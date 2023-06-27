@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, watch, computed, reactive } from "vue";
+import Header from "@/components/Header.vue";
 
 let raisingRangeRaw = ref("");
 let callingRangeRaw = ref("");
@@ -7,15 +8,18 @@ let callingRangeRaw = ref("");
 let inputRangeFull = ref({});
 let simplifiedRangeFull = reactive({});
 let simplifiedRangeSummary = reactive({});
+let originalRangeSummary = reactive({});
 
 let averageRaise = ref(0);
 let averageCall = ref(0);
-let averageFold = ref(0);
+const averageFold = computed(() => {
+  const fold = 100 - averageRaise.value - averageCall.value;
+  return fold.toFixed(2);
+});
 
 let averageRaiseSimplified = ref(0);
 let averageCallSimplified = ref(0);
 let averageFoldSimplified = ref(0);
-
 const handClasses = [
   "AA",
   "AKs",
@@ -188,6 +192,43 @@ const handClasses = [
   "22",
 ];
 
+let rangeView = ref("simplified");
+
+const setRange = (newRange) => {
+  rangeView.value = newRange;
+};
+
+function createGradientStyle(handClassData) {
+  let redEnd, greenStart, greenEnd, blueStart, blueEnd;
+  console.log(rangeView.value);
+  console.log("Range range range");
+
+  if (rangeView.value === "simplified") {
+    redEnd = handClassData.raise * 100;
+    greenStart = redEnd;
+    greenEnd = greenStart + handClassData.call * 100;
+    blueStart = greenEnd;
+    blueEnd = blueStart + handClassData.fold * 100;
+  } else if (rangeView.value === "original") {
+    redEnd = handClassData.raise * 100;
+    greenStart = redEnd;
+    greenEnd = greenStart + handClassData.call * 100;
+    blueStart = greenEnd;
+    blueEnd = 100;
+  } else {
+    // Handle invalid range value here
+    console.error("Invalid range value: ", range);
+    return ""; // Return an empty style if the range is invalid
+  }
+
+  return `background-image:
+    linear-gradient(to right, rgb(240, 60, 60) ${redEnd}%, transparent ${redEnd}%),
+    linear-gradient(to right, rgb(90, 185, 102) ${greenEnd}%, transparent ${greenEnd}%),
+    linear-gradient(to right, rgb(61, 124, 184) ${blueEnd}%, transparent ${blueEnd}%);
+    background-size: 100%, 100%, 100%;
+    background-repeat: no-repeat;`;
+}
+
 function calculateSummary(newRanges) {
   let summary = {};
 
@@ -249,6 +290,80 @@ function calculateSummary(newRanges) {
   simplifiedRangeSummary.value = summary;
 }
 
+function calculateSummaryOriginal(newRanges) {
+  let summary = {};
+
+  let totalRaise = 0;
+  let totalCall = 0;
+  let totalCount = 0;
+
+  Object.keys(newRanges).forEach((key) => {
+    let hand;
+    let suffix = ""; // new variable for the suffix
+    const card1 = key.slice(0, 2);
+    const card2 = key.slice(2, 4);
+
+    // Check if the cards are a pair
+    if (card1[0] === card2[0]) {
+      hand = `${card1[0]}${card2[0]}`;
+    } else if (card1[1] === card2[1]) {
+      // Check if the cards are suited
+      hand = `${card1[0]}${card2[0]}`;
+      suffix = "s"; // assign the suffix here
+    } else {
+      // The cards are offsuit
+      hand = `${card1[0]}${card2[0]}`;
+      suffix = "o"; // assign the suffix here
+    }
+
+    // Order the cards
+    hand = orderCards(hand) + suffix; // add the suffix here
+
+    if (!(hand in summary)) {
+      summary[hand] = {
+        raise: 0,
+        call: 0,
+        fold: 0,
+        count: 0,
+      };
+    }
+
+    summary[hand].raise += newRanges[key].raise;
+    summary[hand].call += newRanges[key].call;
+    summary[hand].fold += newRanges[key].fold;
+    summary[hand].count++;
+
+    // Update total counts for raise, call, and fold
+    totalRaise += newRanges[key].raise * summary[hand].count;
+    totalCall += newRanges[key].call * summary[hand].count;
+    totalCount += summary[hand].count;
+  });
+
+  // Calculate totalFold
+  const totalFold = totalCount - totalRaise - totalCall;
+
+  // Set fold as 1 minus call minus raise for each hand
+  for (const hand in summary) {
+    summary[hand].raise /= summary[hand].count;
+    summary[hand].call /= summary[hand].count;
+    summary[hand].fold = 1 - summary[hand].call - summary[hand].raise;
+  }
+
+  originalRangeSummary.value = summary;
+}
+
+function getRangeSummary(handClass) {
+  if (rangeView.value === "simplified") {
+    return simplifiedRangeSummary.value[handClass];
+  } else if (rangeView.value === "original") {
+    return originalRangeSummary.value[handClass];
+  } else {
+    // Handle invalid range value here
+    console.error("Invalid range value: ", rangeView.value);
+    return {}; // Return an empty object if the range is invalid
+  }
+}
+
 function orderCards(hand) {
   const rankOrder = "AKQJT98765432";
   const card1 = hand.substring(0, 2);
@@ -271,6 +386,7 @@ function orderCards(hand) {
 function simplifyRange() {
   // Create a deep copy of the original inputRangeFull
   const newRanges = JSON.parse(JSON.stringify(inputRangeFull.value));
+  calculateSummaryOriginal(newRanges);
 
   let sumRaiseFrequencies = 0;
   let sumCallFrequencies = 0;
@@ -358,8 +474,8 @@ function simplifyRange() {
     }
   }
 
-  averageRaiseSimplified.value = (totalRaise / totalHands).toFixed(2);
-  averageCallSimplified.value = (totalCall / totalHands).toFixed(2);
+  averageRaiseSimplified.value = ((totalRaise / totalHands) * 100).toFixed(2);
+  averageCallSimplified.value = ((totalCall / totalHands) * 100).toFixed(2);
 
   // Update fold frequencies and calculate average fold frequency
   let totalFold = 0;
@@ -370,14 +486,7 @@ function simplifyRange() {
     }
   }
 
-  averageFoldSimplified.value = (totalFold / totalHands).toFixed(2);
-
-  console.log(`Hands converted to 1 raise: `, handsConvertedToOneRaise);
-  console.log(`Hands converted to 1 call: `, handsConvertedToOneCall);
-  console.log(`New simplified range: `, newRanges);
-  console.log(`Average Raise Simplified: `, averageRaiseSimplified.value);
-  console.log(`Average Call Simplified: `, averageCallSimplified.value);
-  console.log(`Average Fold Simplified: `, averageFoldSimplified.value);
+  averageFoldSimplified.value = ((totalFold / totalHands) * 100).toFixed(2);
 
   // log hands with raise=1
   let raiseOneHands = [];
@@ -388,10 +497,7 @@ function simplifyRange() {
       }
     }
   }
-  console.log(`Hands with raise=1: ${raiseOneHands.join(", ")}`);
   calculateSummary(newRanges);
-  console.log("hello");
-  console.log(simplifiedRangeSummary);
 }
 
 watch(raisingRangeRaw, (newVal) => {
@@ -420,7 +526,7 @@ watch(raisingRangeRaw, (newVal) => {
   // Recalculate average
   const values = Object.values(inputRangeFull.value);
   const totalRaise = values.reduce((total, hand) => total + hand.raise, 0);
-  averageRaise.value = ((totalRaise / values.length) * 100).toFixed(1);
+  averageRaise.value = ((totalRaise / values.length) * 100).toFixed(2);
 
   // Fold frequency calculation
   for (const hand in inputRangeFull.value) {
@@ -458,7 +564,7 @@ watch(callingRangeRaw, (newVal) => {
   // Recalculate average
   const values = Object.values(inputRangeFull.value);
   const totalCall = values.reduce((total, hand) => total + hand.call, 0);
-  averageCall.value = ((totalCall / values.length) * 100).toFixed(1);
+  averageCall.value = ((totalCall / values.length) * 100).toFixed(2);
 
   // Fold frequency calculation
   for (const hand in inputRangeFull.value) {
@@ -514,25 +620,19 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="bg-slate-200 h-full py-5">
+  <Header />
+  <div class="bg-slate-200 h-full py-0 h-screen">
     <div
       class="container max-w-screen-md mx-auto rounded-md border border-slate-300 bg-white p-10"
     >
-      <h1 class="text-xl mb-2 font-semibold">Range Simplifier</h1>
+      <h1 class="text-xl mb-2 font-medium">Range Simplifier</h1>
       <p class="text-base">
-        Lorem ipsum, dolor sit amet consectetur adipisicing elit. Fuga maxime
-        non tempore, natus maiores eum id ullam incidunt mollitia deleniti
-        repudiandae esse est fugiat ab, nemo aliquid sit dolorum. Atque?
+        This tool simplifies ranges by converting all mixed frequency actions
+        into pure strategies while maintaing the overall frequencies. Simply
+        paste a raise and / or call range from GTO Wizard and click simplify.
       </p>
-      <div
-        class="mb-4 mt-5 rounded-lg bg-yellow-100 px-6 py-5 text-base text-yellow-800 border border-yellow-300"
-      >
-        A simple warning alert with
-        <a href="#!" class="font-bold text-warning-800">an example link</a>.
-        Give it a click if you like.
-      </div>
 
-      <div class="flex flex-row space-x-6">
+      <div class="flex flex-row space-x-6 mt-5">
         <div class="basis-1/2">
           <div>
             <label
@@ -574,31 +674,80 @@ onMounted(() => {
       >
         Simplify Range
       </button>
-      <p>Average Raise Simplified: {{ averageRaiseSimplified }}%</p>
-      <p>Average Call Simplified: {{ averageCallSimplified }}%</p>
-      <p>Average Fold Simplified: {{ averageFoldSimplified }}%</p>
 
-      <div class="mt-5">
-        <div class="grid grid-cols-13 gap-1">
-          <div
-            v-for="(handClass, index) in handClasses"
-            :key="index"
-            :class="[
-              'bg-white border border-gray-200 rounded shadow-sm px-2 py-2 text-center text-sm text-black',
-              {
-                'bg-red-500': simplifiedRangeSummary[handClass]?.raise === 1,
-                'bg-green-500': simplifiedRangeSummary[handClass]?.call === 1,
-                'bg-blue-500': simplifiedRangeSummary[handClass]?.fold === 1,
-              },
-            ]"
-          >
-            {{ handClass }}
+      <div
+        class="flex space-x-4 mt-5"
+        v-if="
+          simplifiedRangeSummary.value &&
+          Object.keys(simplifiedRangeSummary.value).length > 0
+        "
+      >
+        <div>
+          <div class="">
+            <div class="grid grid-cols-13">
+              <div
+                v-for="(handClass, index) in handClasses"
+                :key="index"
+                :style="createGradientStyle(getRangeSummary(handClass))"
+                class="border border-gray-200 rounded shadow-sm px-2 py-2 text-center text-white text-sm text-black"
+              >
+                {{ handClass }}
+              </div>
+            </div>
           </div>
         </div>
+        <div class="grow">
+          <button
+            class="text-white py-2 px-4 rounded w-full"
+            :class="{
+              'bg-slate-700': rangeView === 'simplified',
+              'bg-slate-400': rangeView !== 'simplified',
+            }"
+            @click="setRange('simplified')"
+          >
+            Simplified
+          </button>
 
-        <p class="text-sm mt-4">
-          Count of hands: {{ Object.keys(simplifiedRangeFull).length }}
-        </p>
+          <button
+            class="text-white py-2 px-4 rounded mt-2 w-full"
+            :class="{
+              'bg-slate-700': rangeView === 'original',
+              'bg-slate-400': rangeView !== 'original',
+            }"
+            @click="setRange('original')"
+          >
+            Original
+          </button>
+
+          <div
+            class="bg-red-500 w-full p-2 rounded text-white flex justify-between mt-10"
+          >
+            <div>Raise</div>
+            <div v-if="rangeView === 'simplified'">
+              {{ averageRaiseSimplified }}%
+            </div>
+            <div v-else>{{ averageRaise }}%</div>
+          </div>
+          <div
+            class="bg-green-500 w-full p-2 rounded text-white flex justify-between mt-2"
+          >
+            <div>Call</div>
+            <div v-if="rangeView === 'simplified'">
+              {{ averageCallSimplified }}%
+            </div>
+            <div v-else>{{ averageCall }}%</div>
+          </div>
+
+          <div
+            class="bg-blue-500 w-full p-2 rounded text-white flex justify-between mt-2"
+          >
+            <div>Fold</div>
+            <div v-if="rangeView === 'simplified'">
+              {{ averageFoldSimplified }}%
+            </div>
+            <div v-else>{{ averageFold }}%</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
