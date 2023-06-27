@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, watch, computed, reactive } from "vue";
 import Header from "@/components/Header.vue";
+import Footer from "@/components/Footer.vue";
 
 let raisingRangeRaw = ref("");
 let callingRangeRaw = ref("");
@@ -755,5 +756,6 @@ onMounted(() => {
         </div>
       </div>
     </div>
+    <Footer />
   </div>
 </template>
