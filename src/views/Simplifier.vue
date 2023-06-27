@@ -1,12 +1,12 @@
 <script setup>
-import { ref, onMounted, watch, computed } from "vue";
+import { ref, onMounted, watch, computed, reactive } from "vue";
 
 let raisingRangeRaw = ref("");
 let callingRangeRaw = ref("");
 
 let inputRangeFull = ref({});
-let simplifiedRangeFull = ref({});
-let simplifiedRangeSummary = ref({});
+let simplifiedRangeFull = reactive({});
+let simplifiedRangeSummary = reactive({});
 
 let averageRaise = ref(0);
 let averageCall = ref(0);
@@ -188,6 +188,67 @@ const handClasses = [
   "22",
 ];
 
+function calculateSummary(newRanges) {
+  let summary = {};
+
+  let totalRaise = 0;
+  let totalCall = 0;
+  let totalFold = 0;
+  let totalCount = 0;
+
+  Object.keys(newRanges).forEach((key) => {
+    let hand;
+    let suffix = ""; // new variable for the suffix
+    const card1 = key.slice(0, 2);
+    const card2 = key.slice(2, 4);
+
+    // Check if the cards are a pair
+    if (card1[0] === card2[0]) {
+      hand = `${card1[0]}${card2[0]}`;
+    } else if (card1[1] === card2[1]) {
+      // Check if the cards are suited
+      hand = `${card1[0]}${card2[0]}`;
+      suffix = "s"; // assign the suffix here
+    } else {
+      // The cards are offsuit
+      hand = `${card1[0]}${card2[0]}`;
+      suffix = "o"; // assign the suffix here
+    }
+
+    // Order the cards
+    hand = orderCards(hand) + suffix; // add the suffix here
+
+    if (!(hand in summary)) {
+      summary[hand] = {
+        raise: 0,
+        call: 0,
+        fold: 0,
+        count: 0,
+      };
+    }
+
+    summary[hand].raise += newRanges[key].raise;
+    summary[hand].call += newRanges[key].call;
+    summary[hand].fold += newRanges[key].fold;
+    summary[hand].count++;
+
+    // Update total counts for raise, call, and fold
+    totalRaise += newRanges[key].raise * summary[hand].count;
+    totalCall += newRanges[key].call * summary[hand].count;
+    totalFold += newRanges[key].fold * summary[hand].count;
+    totalCount += summary[hand].count;
+  });
+
+  // Now average the frequencies
+  for (const hand in summary) {
+    summary[hand].raise /= summary[hand].count;
+    summary[hand].call /= summary[hand].count;
+    summary[hand].fold /= summary[hand].count;
+  }
+
+  simplifiedRangeSummary.value = summary;
+}
+
 function orderCards(hand) {
   const rankOrder = "AKQJT98765432";
   const card1 = hand.substring(0, 2);
@@ -206,21 +267,6 @@ function orderCards(hand) {
 
   return orderedHand;
 }
-
-function createRangeSummary() {
-  for (let i = 0; i < handClasses.length; i++) {
-    const handClass = handClasses[i];
-    simplifiedRangeSummary[handClass] = {
-      raise: 0,
-      call: 0,
-      fold: 0,
-    };
-  }
-}
-
-createRangeSummary();
-
-console.log(simplifiedRangeSummary);
 
 function simplifyRange() {
   // Create a deep copy of the original inputRangeFull
@@ -343,6 +389,9 @@ function simplifyRange() {
     }
   }
   console.log(`Hands with raise=1: ${raiseOneHands.join(", ")}`);
+  calculateSummary(newRanges);
+  console.log("hello");
+  console.log(simplifiedRangeSummary);
 }
 
 watch(raisingRangeRaw, (newVal) => {
@@ -534,7 +583,14 @@ onMounted(() => {
           <div
             v-for="(handClass, index) in handClasses"
             :key="index"
-            class="bg-white border border-gray-200 rounded shadow-sm px-2 py-2 text-center text-sm text-black"
+            :class="[
+              'bg-white border border-gray-200 rounded shadow-sm px-2 py-2 text-center text-sm text-black',
+              {
+                'bg-red-500': simplifiedRangeSummary[handClass]?.raise === 1,
+                'bg-green-500': simplifiedRangeSummary[handClass]?.call === 1,
+                'bg-blue-500': simplifiedRangeSummary[handClass]?.fold === 1,
+              },
+            ]"
           >
             {{ handClass }}
           </div>
