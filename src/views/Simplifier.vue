@@ -19,7 +19,11 @@ const averageFold = computed(() => {
 
 let averageRaiseSimplified = ref(0);
 let averageCallSimplified = ref(0);
-let averageFoldSimplified = ref(0);
+
+const averageFoldSimplified = computed(() => {
+  const fold = 100 - averageRaiseSimplified.value - averageCallSimplified.value;
+  return fold.toFixed(2);
+});
 const handClasses = [
   "AA",
   "AKs",
@@ -232,32 +236,25 @@ function createGradientStyle(handClassData) {
 function calculateSummary(newRanges) {
   let summary = {};
 
-  let totalRaise = 0;
-  let totalCall = 0;
-  let totalFold = 0;
   let totalCount = 0;
 
   Object.keys(newRanges).forEach((key) => {
     let hand;
-    let suffix = ""; // new variable for the suffix
+    let suffix = "";
     const card1 = key.slice(0, 2);
     const card2 = key.slice(2, 4);
 
-    // Check if the cards are a pair
     if (card1[0] === card2[0]) {
       hand = `${card1[0]}${card2[0]}`;
     } else if (card1[1] === card2[1]) {
-      // Check if the cards are suited
       hand = `${card1[0]}${card2[0]}`;
-      suffix = "s"; // assign the suffix here
+      suffix = "s";
     } else {
-      // The cards are offsuit
       hand = `${card1[0]}${card2[0]}`;
-      suffix = "o"; // assign the suffix here
+      suffix = "o";
     }
 
-    // Order the cards
-    hand = orderCards(hand) + suffix; // add the suffix here
+    hand = orderCards(hand) + suffix;
 
     if (!(hand in summary)) {
       summary[hand] = {
@@ -273,21 +270,29 @@ function calculateSummary(newRanges) {
     summary[hand].fold += newRanges[key].fold;
     summary[hand].count++;
 
-    // Update total counts for raise, call, and fold
-    totalRaise += newRanges[key].raise * summary[hand].count;
-    totalCall += newRanges[key].call * summary[hand].count;
-    totalFold += newRanges[key].fold * summary[hand].count;
-    totalCount += summary[hand].count;
+    totalCount++;
   });
 
-  // Now average the frequencies
+  // Now average the frequencies and round them to the nearest integer
+  let totalRaise = 0;
+  let totalCall = 0;
+  let totalFold = 0;
+
   for (const hand in summary) {
-    summary[hand].raise /= summary[hand].count;
-    summary[hand].call /= summary[hand].count;
-    summary[hand].fold /= summary[hand].count;
+    summary[hand].raise = Math.round(summary[hand].raise / summary[hand].count);
+    summary[hand].call = Math.round(summary[hand].call / summary[hand].count);
+    summary[hand].fold = Math.round(summary[hand].fold / summary[hand].count);
+
+    totalRaise += summary[hand].raise * summary[hand].count;
+    totalCall += summary[hand].call * summary[hand].count;
+    totalFold += summary[hand].fold * summary[hand].count;
   }
 
   simplifiedRangeSummary.value = summary;
+
+  // Calculate the weighted averages
+  averageRaiseSimplified.value = ((totalRaise / totalCount) * 100).toFixed(2);
+  averageCallSimplified.value = ((totalCall / totalCount) * 100).toFixed(2);
 }
 
 function calculateSummaryOriginal(newRanges) {
