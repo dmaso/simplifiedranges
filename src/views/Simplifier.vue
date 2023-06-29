@@ -8,8 +8,13 @@ let callingRangeRaw = ref("");
 
 let inputRangeFull = ref({});
 let simplifiedRangeFull = reactive({});
-let simplifiedRangeSummary = reactive({});
 let originalRangeSummary = reactive({});
+
+let simplifiedRangeSummary = reactive({});
+
+let simplifiedRangeRaise = [];
+let simplifiedRangeCall = [];
+let simplifiedRangeFold = [];
 
 let averageRaise = ref(0);
 let averageCall = ref(0);
@@ -205,8 +210,6 @@ const setRange = (newRange) => {
 
 function createGradientStyle(handClassData) {
   let redEnd, greenStart, greenEnd, blueStart, blueEnd;
-  console.log(rangeView.value);
-  console.log("Range range range");
 
   if (rangeView.value === "simplified") {
     redEnd = handClassData.raise * 100;
@@ -290,6 +293,21 @@ function calculateSummary(newRanges) {
   }
 
   simplifiedRangeSummary.value = summary;
+
+  // Update simplifiedRangeRaise, simplifiedRangeCall, and simplifiedRangeFold arrays
+  simplifiedRangeRaise = Object.keys(summary).filter(
+    (hand) => summary[hand].raise === 1
+  );
+  simplifiedRangeCall = Object.keys(summary).filter(
+    (hand) => summary[hand].call === 1
+  );
+  simplifiedRangeFold = Object.keys(summary).filter(
+    (hand) => summary[hand].fold === 1
+  );
+
+  console.log(simplifiedRangeRaise);
+  console.log(simplifiedRangeCall);
+  console.log(simplifiedRangeFold);
 
   // Calculate the weighted averages
   averageRaiseSimplified.value = ((totalRaise / totalCount) * 100).toFixed(2);
@@ -491,8 +509,6 @@ function simplifyRange() {
       totalFold += newRanges[hand].fold;
     }
   }
-
-  averageFoldSimplified.value = ((totalFold / totalHands) * 100).toFixed(2);
 
   // log hands with raise=1
   let raiseOneHands = [];
@@ -702,56 +718,82 @@ onMounted(() => {
             </div>
           </div>
         </div>
-        <div class="grow">
-          <button
-            class="text-white py-2 px-4 rounded w-full"
-            :class="{
-              'bg-slate-700': rangeView === 'simplified',
-              'bg-slate-400': rangeView !== 'simplified',
-            }"
-            @click="setRange('simplified')"
-          >
-            Simplified
-          </button>
+        <div class="grow flex flex-col justify-between">
+          <div>
+            <button
+              class="text-white py-2 px-4 rounded w-full"
+              :class="{
+                'bg-slate-700': rangeView === 'simplified',
+                'bg-slate-400': rangeView !== 'simplified',
+              }"
+              @click="setRange('simplified')"
+            >
+              Simplified
+            </button>
 
-          <button
-            class="text-white py-2 px-4 rounded mt-2 w-full"
-            :class="{
-              'bg-slate-700': rangeView === 'original',
-              'bg-slate-400': rangeView !== 'original',
-            }"
-            @click="setRange('original')"
-          >
-            Original
-          </button>
+            <button
+              class="text-white py-2 px-4 rounded mt-2 w-full"
+              :class="{
+                'bg-slate-700': rangeView === 'original',
+                'bg-slate-400': rangeView !== 'original',
+              }"
+              @click="setRange('original')"
+            >
+              Original
+            </button>
 
-          <div
-            class="bg-red-500 w-full p-2 rounded text-white flex justify-between mt-10"
-          >
-            <div>Raise</div>
-            <div v-if="rangeView === 'simplified'">
-              {{ averageRaiseSimplified }}%
+            <div>
+              <div
+                class="bg-red-500 w-full p-2 rounded text-white flex justify-between mt-10"
+              >
+                <div>Raise</div>
+                <div v-if="rangeView === 'simplified'">
+                  {{ averageRaiseSimplified }}%
+                </div>
+                <div v-else>{{ averageRaise }}%</div>
+              </div>
+              <div
+                class="bg-green-500 w-full p-2 rounded text-white flex justify-between mt-2"
+              >
+                <div>Call</div>
+                <div v-if="rangeView === 'simplified'">
+                  {{ averageCallSimplified }}%
+                </div>
+                <div v-else>{{ averageCall }}%</div>
+              </div>
+
+              <div
+                class="bg-blue-500 w-full p-2 rounded text-white flex justify-between mt-2"
+              >
+                <div>Fold</div>
+                <div v-if="rangeView === 'simplified'">
+                  {{ averageFoldSimplified }}%
+                </div>
+                <div v-else>{{ averageFold }}%</div>
+              </div>
             </div>
-            <div v-else>{{ averageRaise }}%</div>
           </div>
-          <div
-            class="bg-green-500 w-full p-2 rounded text-white flex justify-between mt-2"
-          >
-            <div>Call</div>
-            <div v-if="rangeView === 'simplified'">
-              {{ averageCallSimplified }}%
-            </div>
-            <div v-else>{{ averageCall }}%</div>
-          </div>
 
-          <div
-            class="bg-blue-500 w-full p-2 rounded text-white flex justify-between mt-2"
-          >
-            <div>Fold</div>
-            <div v-if="rangeView === 'simplified'">
-              {{ averageFoldSimplified }}%
-            </div>
-            <div v-else>{{ averageFold }}%</div>
+          <div>
+            <button
+              class="text-white py-2 px-4 rounded w-full bg-slate-400 hover:bg-slate-700"
+              @click=""
+            >
+              Copy Raise
+            </button>
+
+            <button
+              class="text-white py-2 px-4 rounded w-full bg-slate-400 hover:bg-slate-700 mt-2"
+              @click=""
+            >
+              Copy Call
+            </button>
+            <button
+              class="text-white py-2 px-4 rounded w-full bg-slate-400 hover:bg-slate-700 mt-2"
+              @click=""
+            >
+              Copy Fold
+            </button>
           </div>
         </div>
       </div>
