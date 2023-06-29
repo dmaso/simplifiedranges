@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, watch, computed, reactive } from "vue";
 import Header from "@/components/Header.vue";
+import { Toaster, toast } from "vue-sonner";
 import Footer from "@/components/Footer.vue";
 
 let raisingRangeRaw = ref("");
@@ -203,6 +204,32 @@ const handClasses = [
 ];
 
 let rangeView = ref("simplified");
+
+const copyTextToClipboard = (action) => {
+  let text;
+
+  if (action === "call") {
+    text = simplifiedRangeCall.join(", ");
+  } else if (action === "raise") {
+    text = simplifiedRangeRaise.join(", ");
+  } else if (action === "fold") {
+    text = simplifiedRangeFold.join(", ");
+  } else {
+    console.error("Invalid action:", action);
+    return;
+  }
+
+  navigator.clipboard
+    .writeText(text)
+    .then(() => {
+      toast.success("Ranged copied.");
+      // You can also show a success message or perform any other actions here
+    })
+    .catch((error) => {
+      toast.error("Copy unsuccessful.");
+      // You can show an error message or perform any other error handling here
+    });
+};
 
 const setRange = (newRange) => {
   rangeView.value = newRange;
@@ -777,20 +804,20 @@ onMounted(() => {
           <div>
             <button
               class="text-white py-2 px-4 rounded w-full bg-slate-400 hover:bg-slate-700"
-              @click=""
+              @click="copyTextToClipboard('raise')"
             >
               Copy Raise
             </button>
 
             <button
               class="text-white py-2 px-4 rounded w-full bg-slate-400 hover:bg-slate-700 mt-2"
-              @click=""
+              @click="copyTextToClipboard('call')"
             >
               Copy Call
             </button>
             <button
               class="text-white py-2 px-4 rounded w-full bg-slate-400 hover:bg-slate-700 mt-2"
-              @click=""
+              @click="copyTextToClipboard('fold')"
             >
               Copy Fold
             </button>
@@ -799,5 +826,6 @@ onMounted(() => {
       </div>
     </div>
     <Footer />
+    <Toaster position="top-right" />
   </div>
 </template>
