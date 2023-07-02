@@ -549,70 +549,85 @@ function simplifyRange() {
   calculateSummary(newRanges);
 }
 
+const parseSuitedHands = (hand, Freq, freqType) => {
+  const baseHand = hand.slice(0, 2);
+  const suits = ["s", "c", "h", "d"];
+  return suits.map((suit) => {
+    const expandedHand = `${baseHand[0]}${suit}${baseHand[1]}${suit}`;
+    console.log(`Expanded hand: ${expandedHand}`);
+    return {
+      hand: orderCards(expandedHand),
+      [freqType]: parseFloat(Freq),
+    };
+  });
+};
+
+const parseOffSuitHands = (hand, Freq, freqType) => {
+  const suits = ["s", "c", "h", "d"];
+  const offSuitCombinations = [];
+  const isPocketPair = hand.length === 2 && hand[0] === hand[1];
+  const baseHand = isPocketPair ? hand.slice(0, 1) : hand.slice(0, 2);
+
+  for (let i = 0; i < suits.length; i++) {
+    const firstSuit = suits[i];
+    for (let j = 0; j < suits.length; j++) {
+      const secondSuit = suits[j];
+      if (firstSuit !== secondSuit) {
+        const offSuitCombination = isPocketPair
+          ? `${baseHand}${firstSuit}${baseHand}${secondSuit}`
+          : `${baseHand[0]}${firstSuit}${baseHand[1]}${secondSuit}`;
+
+        offSuitCombinations.push(offSuitCombination);
+      }
+    }
+  }
+
+  // Generate suited combos if characters are different and the hand is of length 2
+  if (!isPocketPair && hand.length === 2) {
+    console.log("Generating suited combos...");
+    const suitedCombos = parseSuitedHands(hand, Freq, freqType);
+    console.log("Suited Combos: ", suitedCombos);
+    offSuitCombinations.push(...suitedCombos);
+  }
+
+  console.log("OffSuit Combinations: ", offSuitCombinations);
+  return offSuitCombinations.map((combo) => {
+    const hand = typeof combo === "string" ? combo : combo.hand;
+    console.log("Ordering hand: ", hand);
+    return {
+      hand: orderCards(hand),
+      [freqType]: parseFloat(Freq),
+    };
+  });
+};
+
 watch(raisingRangeRaw, (newVal) => {
   // Parse new value
   const handData = newVal.split(",").flatMap((entry) => {
     const [hand, raiseFreq = "1"] = entry.split(":");
     const handLength = hand.length;
 
+    // Check if hand is of length 2
     if (handLength === 2) {
-      console.log(`Character count ${handLength}`);
-      const baseHand = hand.slice(0, 1);
-      const suits = ["s", "c", "h", "d"];
-      const offSuitCombinations = [];
-      for (let i = 0; i < suits.length; i++) {
-        const firstSuit = suits[i];
-        for (let j = 0; j < suits.length; j++) {
-          const secondSuit = suits[j];
-          if (firstSuit !== secondSuit) {
-            const offSuitCombination = `${baseHand}${firstSuit}${baseHand}${secondSuit}`;
-            offSuitCombinations.push(offSuitCombination);
-          }
-        }
-      }
-      return offSuitCombinations.map((hand) => ({
-        hand: orderCards(hand),
-        raiseFreq: parseFloat(raiseFreq),
-      }));
+      return parseOffSuitHands(hand, raiseFreq, "raiseFreq");
     }
 
-    if (handLength === 3 && hand.includes("s") && !hand.includes("o")) {
-      const baseHand = hand.slice(0, 2);
-      const suits = ["s", "c", "h", "d"];
-      return suits.map((suit) => {
-        const expandedHand = `${baseHand[0]}${suit}${baseHand[1]}${suit}`;
-        console.log(`Expanded hand: ${expandedHand}`);
-        return {
-          hand: orderCards(expandedHand),
-          raiseFreq: parseFloat(raiseFreq),
-        };
-      });
-    }
-
-    if (handLength === 3 && hand.includes("o")) {
-      const baseHand = hand.slice(0, 2);
-      const suits = ["s", "c", "h", "d"];
-      const offSuitCombinations = [];
-      for (let i = 0; i < suits.length; i++) {
-        const firstSuit = suits[i];
-        for (let j = 0; j < suits.length; j++) {
-          const secondSuit = suits[j];
-          if (firstSuit !== secondSuit) {
-            const offSuitCombination = `${baseHand[0]}${firstSuit}${baseHand[1]}${secondSuit}`;
-            offSuitCombinations.push(offSuitCombination);
-          }
-        }
+    // Check if hand is of length 3
+    if (handLength === 3) {
+      // Check if hand includes 's' and not 'o' for suited hands
+      if (hand.includes("s") && !hand.includes("o")) {
+        return parseSuitedHands(hand, raiseFreq, "raiseFreq");
       }
-      return offSuitCombinations.map((hand) => ({
-        hand: orderCards(hand),
-        raiseFreq: parseFloat(raiseFreq),
-      }));
+
+      // Check if hand includes 'o' for offsuit hands
+      if (hand.includes("o")) {
+        return parseOffSuitHands(hand, raiseFreq, "raiseFreq");
+      }
     }
 
     console.log(`Original hand: ${hand}`);
     return { hand: orderCards(hand), raiseFreq: parseFloat(raiseFreq) };
   });
-
   // Update inputRangeFull with parsed data
   for (const data of handData) {
     if (inputRangeFull.value.hasOwnProperty(data.hand)) {
@@ -651,57 +666,15 @@ watch(callingRangeRaw, (newVal) => {
     const handLength = hand.length;
 
     if (handLength === 2) {
-      console.log(`Character count ${handLength}`);
-      const baseHand = hand.slice(0, 1);
-      const suits = ["s", "c", "h", "d"];
-      const offSuitCombinations = [];
-      for (let i = 0; i < suits.length; i++) {
-        const firstSuit = suits[i];
-        for (let j = 0; j < suits.length; j++) {
-          const secondSuit = suits[j];
-          if (firstSuit !== secondSuit) {
-            const offSuitCombination = `${baseHand}${firstSuit}${baseHand}${secondSuit}`;
-            offSuitCombinations.push(offSuitCombination);
-          }
-        }
-      }
-      return offSuitCombinations.map((hand) => ({
-        hand: orderCards(hand),
-        callFreq: parseFloat(callFreq),
-      }));
+      return parseOffSuitHands(hand, callFreq, "callFreq");
     }
 
     if (handLength === 3 && hand.includes("s") && !hand.includes("o")) {
-      const baseHand = hand.slice(0, 2);
-      const suits = ["s", "c", "h", "d"];
-      return suits.map((suit) => {
-        const expandedHand = `${baseHand[0]}${suit}${baseHand[1]}${suit}`;
-        console.log(`Expanded hand: ${expandedHand}`);
-        return {
-          hand: orderCards(expandedHand),
-          callFreq: parseFloat(callFreq),
-        };
-      });
+      return parseSuitedHands(hand, callFreq, "callFreq");
     }
 
     if (handLength === 3 && hand.includes("o")) {
-      const baseHand = hand.slice(0, 2);
-      const suits = ["s", "c", "h", "d"];
-      const offSuitCombinations = [];
-      for (let i = 0; i < suits.length; i++) {
-        const firstSuit = suits[i];
-        for (let j = 0; j < suits.length; j++) {
-          const secondSuit = suits[j];
-          if (firstSuit !== secondSuit) {
-            const offSuitCombination = `${baseHand[0]}${firstSuit}${baseHand[1]}${secondSuit}`;
-            offSuitCombinations.push(offSuitCombination);
-          }
-        }
-      }
-      return offSuitCombinations.map((hand) => ({
-        hand: orderCards(hand),
-        callFreq: parseFloat(callFreq),
-      }));
+      return parseOffSuitHands(hand, callFreq, "callFreq");
     }
 
     console.log(`Original hand: ${hand}`);
