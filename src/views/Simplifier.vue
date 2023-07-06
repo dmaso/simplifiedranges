@@ -781,7 +781,8 @@ onMounted(() => {
       <p class="text-base">
         This tool simplifies ranges by converting all mixed frequency actions
         into pure strategies while maintaing the overall frequencies. Simply
-        paste a raise and / or call range from GTO Wizard and click simplify.
+        paste a raise and / or call range from GTO Wizard or PIO solver and
+        click simplify.
       </p>
 
       <div class="flex flex-row space-x-6 mt-5">
