@@ -602,6 +602,14 @@ const parseOffSuitHands = (hand, Freq, freqType) => {
 };
 
 watch(raisingRangeRaw, (newVal) => {
+  // Clear raise and fold values in inputRangeFull
+  for (const hand in inputRangeFull.value) {
+    if (inputRangeFull.value.hasOwnProperty(hand)) {
+      inputRangeFull.value[hand].raise = 0;
+      inputRangeFull.value[hand].fold = 0;
+    }
+  }
+
   // Parse new value
   const handData = newVal.split(",").flatMap((entry) => {
     const [hand, raiseFreq = "1"] = entry.split(":");
@@ -660,6 +668,14 @@ watch(raisingRangeRaw, (newVal) => {
 });
 
 watch(callingRangeRaw, (newVal) => {
+  // Clear raise and fold values in inputRangeFull
+  for (const hand in inputRangeFull.value) {
+    if (inputRangeFull.value.hasOwnProperty(hand)) {
+      inputRangeFull.value[hand].raise = 0;
+      inputRangeFull.value[hand].fold = 0;
+    }
+  }
+
   // Parse new value
   const handData = newVal.split(",").flatMap((entry) => {
     const [hand, callFreq = "1"] = entry.split(":");
@@ -888,7 +904,7 @@ onMounted(() => {
             </div>
           </div>
 
-          <div>
+          <div v-if="rangeView === 'simplified'">
             <button
               class="text-white py-2 px-4 rounded w-full bg-slate-400 hover:bg-slate-700"
               @click="copyTextToClipboard('raise')"
