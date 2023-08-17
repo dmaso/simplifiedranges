@@ -671,7 +671,7 @@ watch(callingRangeRaw, (newVal) => {
   // Clear raise and fold values in inputRangeFull
   for (const hand in inputRangeFull.value) {
     if (inputRangeFull.value.hasOwnProperty(hand)) {
-      inputRangeFull.value[hand].raise = 0;
+      inputRangeFull.value[hand].call = 0;
       inputRangeFull.value[hand].fold = 0;
     }
   }
